@@ -7,11 +7,22 @@ Application Streamlit dynamique pour explorer les revenus non prélevés
 
 - **Vue d'ensemble** : KPIs globaux, répartition par type de revenu, top agences et top clients.
 - **Par Client** : sélectionnez un client → montant total à prélever, détail de ses contrats.
-- **Par Agence (DAO)** : sélectionnez une agence → liste complète de ses clients et montants.
+- **Par Agence** : sélectionnez une agence → liste complète de ses clients et montants.
 - **Par Type de revenu** : sélectionnez un type (Intérêt / Pénalité) → tous les clients concernés.
 - **Données complètes** : table brute filtrable et exportable en CSV.
-- Filtres globaux dans la barre latérale : Pays, Agence, Type de revenu, Période.
+- **Régularisation client** : dans l'onglet Client, le bouton « ✓ Marquer régularisé » retire le
+  client de la liste après confirmation. La liste des clients régularisés est consultable et
+  réversible depuis la barre latérale. ⚠️ Cet état est conservé uniquement le temps de la session
+  (il est réinitialisé si l'application est redémarrée) — il n'écrit rien dans le fichier Excel.
+- Filtres globaux dans la barre latérale (repliés par défaut) : Pays, Agence, Type de revenu, Période.
 - Export CSV disponible à chaque niveau (client, agence, type, global).
+- Logo et couleur de marque Baobab (rose `#E40473`) intégrés au design.
+
+## Personnaliser le logo
+
+Remplacez le fichier `logo-dark.png` à la racine du projet par votre propre logo (fond transparent
+recommandé) pour qu'il s'affiche automatiquement dans l'en-tête et la barre latérale — aucune
+modification de code n'est nécessaire.
 
 ## Installation
 

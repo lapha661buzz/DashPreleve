@@ -1,10 +1,11 @@
 """
-Plateforme de Suivi des Pertes de Revenu
-==========================================
+Plateforme de Suivi des Pertes de Revenu — Baobab
+==================================================
 Application Streamlit permettant d'explorer les revenus non prélevés
-par Client, par Agence (DAO) et par Type de revenu.
+par Client, par Agence et par Type de revenu.
 """
 
+import base64
 import os
 
 import pandas as pd
@@ -12,36 +13,48 @@ import plotly.express as px
 import streamlit as st
 
 # --------------------------------------------------------------------------------------
+# CHEMINS
+# --------------------------------------------------------------------------------------
+BASE_DIR = os.path.dirname(__file__)
+DATA_PATH = os.path.join(BASE_DIR, "data", "Resultat.xlsx")
+LOGO_PATH = os.path.join(BASE_DIR, "logo-dark.png")
+
+# --------------------------------------------------------------------------------------
 # CONFIGURATION GENERALE
 # --------------------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Pertes de Revenu",
-    page_icon="◆",
+    page_title="Baobab | Pertes de Revenu",
+    page_icon=LOGO_PATH if os.path.exists(LOGO_PATH) else "◆",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "Resultat.xlsx")
-
 # --------------------------------------------------------------------------------------
-# PALETTE & TYPOGRAPHIE
+# PALETTE & TYPOGRAPHIE (couleur de marque extraite du logo Baobab)
 # --------------------------------------------------------------------------------------
 INK = "#101828"
 MUTED = "#6B7280"
 PAPER = "#F7F7F4"
 CARD = "#FFFFFF"
 LINE = "#E3E2DD"
-EMERALD = "#1E7A5C"     # Intérêt / valeurs saines
-EMERALD_SOFT = "#E7F1EC"
-RUST = "#C1553A"        # Pénalité / signal de fuite
+BRAND = "#E40473"        # rose Baobab — Intérêt / identité de marque
+BRAND_SOFT = "#FCE4F0"
+RUST = "#C1553A"         # Pénalité / signal de fuite
 RUST_SOFT = "#F7E9E4"
 
-TYPE_COLOR = {"Intérêt": EMERALD, "Pénalité": RUST}
+TYPE_COLOR = {"Intérêt": BRAND, "Pénalité": RUST}
 
 
 def color_for_type(t: str) -> str:
     return TYPE_COLOR.get(str(t), INK)
 
+
+def get_base64_image(path: str) -> str:
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+
+logo_b64 = get_base64_image(LOGO_PATH) if os.path.exists(LOGO_PATH) else None
 
 # --------------------------------------------------------------------------------------
 # STYLE
@@ -55,7 +68,7 @@ st.markdown(
             font-family: 'Inter', -apple-system, sans-serif;
         }}
         .stApp {{ background-color: {PAPER}; }}
-        .block-container {{ padding-top: 1.2rem; padding-bottom: 3rem; max-width: 1180px; }}
+        .block-container {{ padding-top: 2.4rem; padding-bottom: 3rem; max-width: 1180px; }}
 
         h1, h2, h3, h4 {{
             font-family: 'Inter', sans-serif;
@@ -74,7 +87,7 @@ st.markdown(
             border-color: rgba(255,255,255,0.12);
         }}
         section[data-testid="stSidebar"] .stMultiSelect [data-baseweb="tag"] {{
-            background-color: {EMERALD} !important;
+            background-color: {BRAND} !important;
         }}
         section[data-testid="stSidebar"] .streamlit-expanderHeader,
         section[data-testid="stSidebar"] [data-testid="stExpander"] summary {{
@@ -92,24 +105,40 @@ st.markdown(
             margin-bottom: 10px;
             display: block;
         }}
+        .sidebar-logo {{
+            height: 46px;
+            width: auto;
+            margin-top: 6px;
+            margin-bottom: 16px;
+        }}
 
         /* ---------- En-tête / hero ---------- */
         .hero {{
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: center;
             border-bottom: 1px solid {LINE};
+            padding-top: 18px;
             padding-bottom: 22px;
+            margin-top: 8px;
             margin-bottom: 28px;
             flex-wrap: wrap;
             gap: 20px;
         }}
+        .hero-brand {{
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }}
+        .hero-logo {{
+            height: 64px;
+            width: auto;
+        }}
         .hero-mark {{
             display: inline-block;
             width: 10px; height: 10px;
-            background: linear-gradient(135deg, {EMERALD}, {RUST});
+            background: linear-gradient(135deg, {BRAND}, {RUST});
             border-radius: 3px;
-            margin-right: 10px;
         }}
         .hero-title {{
             font-family: 'Fraunces', serif;
@@ -133,7 +162,7 @@ st.markdown(
             font-family: 'Fraunces', serif;
             font-size: 2.3rem;
             font-weight: 500;
-            color: {RUST};
+            color: {BRAND};
             line-height: 1;
         }}
 
@@ -167,7 +196,7 @@ st.markdown(
         }}
         .stTabs [aria-selected="true"] {{
             color: {INK} !important;
-            border-bottom: 2px solid {EMERALD} !important;
+            border-bottom: 2px solid {BRAND} !important;
             background-color: transparent !important;
         }}
 
@@ -207,7 +236,7 @@ st.markdown(
             border: 1px solid currentColor;
         }}
 
-        /* ---------- Boutons de téléchargement ---------- */
+        /* ---------- Boutons ---------- */
         .stDownloadButton button {{
             background-color: {CARD};
             color: {INK};
@@ -216,8 +245,29 @@ st.markdown(
             font-weight: 500;
         }}
         .stDownloadButton button:hover {{
-            border-color: {EMERALD};
-            color: {EMERALD};
+            border-color: {BRAND};
+            color: {BRAND};
+        }}
+        div[data-testid="stButton"] button {{
+            border-radius: 6px;
+            font-weight: 500;
+        }}
+        div[data-testid="stButton"] button[kind="primary"] {{
+            background-color: {BRAND};
+            border-color: {BRAND};
+        }}
+        div[data-testid="stButton"] button[kind="primary"]:hover {{
+            background-color: #C4045F;
+            border-color: #C4045F;
+        }}
+        div[data-testid="stButton"] button:not([kind="primary"]) {{
+            background-color: {CARD};
+            color: {INK};
+            border: 1px solid {LINE};
+        }}
+        div[data-testid="stButton"] button:not([kind="primary"]):hover {{
+            border-color: {BRAND};
+            color: {BRAND};
         }}
 
         section.main > div {{ padding-top: 0rem; }}
@@ -252,6 +302,7 @@ def style_fig(fig, title=None):
 def load_data(path: str):
     detail = pd.read_excel(path, sheet_name="Vu détail")
     detail["Date d'identification"] = pd.to_datetime(detail["Date d'identification"])
+    detail = detail.rename(columns={"DAO": "Agence"})
     try:
         consolide = pd.read_excel(path, sheet_name="Vu consolidé")
     except Exception:
@@ -279,10 +330,64 @@ def type_pill(t):
 
 
 # --------------------------------------------------------------------------------------
-# BARRE LATERALE — FILTRES
+# ETAT — CLIENTS REGULARISES (session en cours)
 # --------------------------------------------------------------------------------------
+st.session_state.setdefault("regularises", set())
+
+
+@st.dialog("Confirmer la régularisation")
+def confirm_regularize(client_id, montant):
+    st.write(
+        f"Le client **{client_id}** ({fmt_money(montant)}) sera retiré de la liste "
+        "des pertes de revenu."
+    )
+    st.caption("Vous pourrez le réintégrer depuis la barre latérale, section « Clients régularisés ».")
+    c1, c2 = st.columns(2)
+    if c1.button("Confirmer", type="primary", use_container_width=True):
+        st.session_state.regularises.add(client_id)
+        st.rerun()
+    if c2.button("Annuler", use_container_width=True):
+        st.rerun()
+
+
+@st.dialog("Confirmer la réintégration")
+def confirm_reintegrate(client_id):
+    st.write(
+        f"Voulez-vous réintégrer le client **{client_id}** dans la liste des pertes de revenu ?"
+    )
+    c1, c2 = st.columns(2)
+    if c1.button("Confirmer", type="primary", use_container_width=True, key=f"confirm_reint_{client_id}"):
+        st.session_state.regularises.discard(client_id)
+        st.rerun()
+    if c2.button("Annuler", use_container_width=True, key=f"cancel_reint_{client_id}"):
+        st.rerun()
+
+
+@st.dialog("Réinitialiser les régularisations")
+def confirm_reset_all():
+    st.write("Voulez-vous réintégrer **tous** les clients régularisés dans la liste ?")
+    c1, c2 = st.columns(2)
+    if c1.button("Confirmer", type="primary", use_container_width=True, key="confirm_reset_all_btn"):
+        st.session_state.regularises.clear()
+        st.rerun()
+    if c2.button("Annuler", use_container_width=True, key="cancel_reset_all_btn"):
+        st.rerun()
+
+
+# --------------------------------------------------------------------------------------
+# BARRE LATERALE — LOGO & FILTRES
+# --------------------------------------------------------------------------------------
+if logo_b64:
+    st.sidebar.markdown(
+        f'<img src="data:image/png;base64,{logo_b64}" class="sidebar-logo" />',
+        unsafe_allow_html=True,
+    )
+else:
+    st.sidebar.markdown(
+        "<div style='font-family:Fraunces,serif; font-size:1.3rem;'>Baobab</div>",
+        unsafe_allow_html=True,
+    )
 st.sidebar.markdown(
-    "<div style='font-family:Fraunces,serif; font-size:1.3rem; margin-bottom:2px;'>Pertes de revenu</div>"
     "<div style='color:#9CA3AF; font-size:0.82rem; margin-bottom:18px;'>Filtres</div>",
     unsafe_allow_html=True,
 )
@@ -292,9 +397,9 @@ with st.sidebar.expander("Pays", expanded=False):
     sel_pays = st.multiselect("Pays", pays_options, default=pays_options, label_visibility="collapsed")
 st.sidebar.caption(f"{len(sel_pays)} / {len(pays_options)} sélectionné(s)")
 
-agence_options = sorted(df["DAO"].dropna().unique().tolist())
-with st.sidebar.expander("Agence (DAO)", expanded=False):
-    sel_agences = st.multiselect("Agence (DAO)", agence_options, default=agence_options, label_visibility="collapsed")
+agence_options = sorted(df["Agence"].dropna().unique().tolist())
+with st.sidebar.expander("Agence", expanded=False):
+    sel_agences = st.multiselect("Agence", agence_options, default=agence_options, label_visibility="collapsed")
 st.sidebar.caption(f"{len(sel_agences)} / {len(agence_options)} sélectionnée(s)")
 
 type_options = sorted(df["Type de revenu"].dropna().unique().tolist())
@@ -309,13 +414,27 @@ if pd.notnull(date_min) and pd.notnull(date_max) and date_min != date_max:
     date_range = st.sidebar.date_input("Période", value=(date_min, date_max))
 
 st.sidebar.markdown("<hr>", unsafe_allow_html=True)
+
+if st.session_state.regularises:
+    with st.sidebar.expander(f"Clients régularisés ({len(st.session_state.regularises)})", expanded=False):
+        for cid in sorted(st.session_state.regularises, key=str):
+            rc1, rc2 = st.columns([3, 1])
+            rc1.write(str(cid))
+            if rc2.button("↺", key=f"restore_{cid}", help="Réintégrer ce client dans la liste"):
+                confirm_reintegrate(cid)
+        st.markdown("---")
+        if st.button("Réinitialiser tout", key="reset_all_reg", use_container_width=True):
+            confirm_reset_all()
+    st.sidebar.caption("Régularisations valables pour cette session.")
+
+st.sidebar.markdown("<hr>", unsafe_allow_html=True)
 st.sidebar.caption(
     f"Données au {date_max.strftime('%d/%m/%Y')}" if pd.notnull(date_max) else ""
 )
 
 mask = (
     df["Pays"].isin(sel_pays)
-    & df["DAO"].isin(sel_agences)
+    & df["Agence"].isin(sel_agences)
     & df["Type de revenu"].isin(sel_types)
 )
 if date_range and isinstance(date_range, tuple) and len(date_range) == 2:
@@ -323,18 +442,28 @@ if date_range and isinstance(date_range, tuple) and len(date_range) == 2:
     mask &= df["Date d'identification"].between(pd.Timestamp(start), pd.Timestamp(end))
 
 fdf = df[mask].copy()
+if st.session_state.regularises:
+    fdf = fdf[~fdf["ID Client"].isin(st.session_state.regularises)]
 
 # --------------------------------------------------------------------------------------
 # EN-TETE / HERO
 # --------------------------------------------------------------------------------------
 total_non_preleve = fdf["Montant non prélevé"].sum() if not fdf.empty else 0
 
+logo_html = (
+    f'<img src="data:image/png;base64,{logo_b64}" class="hero-logo" />'
+    if logo_b64 else '<span class="hero-mark"></span>'
+)
+
 st.markdown(
     f"""
     <div class="hero">
-        <div>
-            <p class="hero-title"><span class="hero-mark"></span>Suivi des pertes de revenu</p>
-            <p class="hero-subtitle">Détection des revenus non prélevés — Client, Agence, Type de revenu</p>
+        <div class="hero-brand">
+            {logo_html}
+            <div>
+                <p class="hero-title">Suivi des pertes de revenu</p>
+                <p class="hero-subtitle">Détection des revenus non prélevés — Client, Agence, Type de revenu</p>
+            </div>
         </div>
         <div style="text-align:right;">
             <div class="hero-stat-label">Montant non prélevé (filtres actifs)</div>
@@ -362,7 +491,7 @@ tab_overview, tab_client, tab_agence, tab_type, tab_data = st.tabs(
 with tab_overview:
     nb_clients = fdf["ID Client"].nunique()
     nb_contrats = fdf["ID Contrat"].nunique()
-    nb_agences = fdf["DAO"].nunique()
+    nb_agences = fdf["Agence"].nunique()
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Clients concernés", f"{nb_clients}")
@@ -384,14 +513,14 @@ with tab_overview:
 
     with colB:
         by_agence = (
-            fdf.groupby("DAO", as_index=False)["Montant non prélevé"].sum()
+            fdf.groupby("Agence", as_index=False)["Montant non prélevé"].sum()
             .sort_values("Montant non prélevé", ascending=False).head(12)
         )
         fig_bar = px.bar(
-            by_agence, x="DAO", y="Montant non prélevé", text_auto=".2s",
-            color_discrete_sequence=[EMERALD],
+            by_agence, x="Agence", y="Montant non prélevé", text_auto=".2s",
+            color_discrete_sequence=[BRAND],
         )
-        fig_bar.update_xaxes(type="category", title="Agence (DAO)")
+        fig_bar.update_xaxes(type="category", title="Agence")
         fig_bar.update_yaxes(title="")
         style_fig(fig_bar, "Top agences par montant non prélevé")
         st.plotly_chart(fig_bar, use_container_width=True)
@@ -425,20 +554,27 @@ with tab_client:
     cdf = fdf[fdf["ID Client"] == sel_client]
     total_client = cdf["Montant non prélevé"].sum()
     nb_contrats_client = cdf["ID Contrat"].nunique()
-    agences_client = ", ".join(str(a) for a in sorted(cdf["DAO"].unique()))
+    agences_client = ", ".join(str(a) for a in sorted(cdf["Agence"].unique()))
 
-    st.markdown(
-        f"""
-        <div class="summary-card">
-            <div class="name">Client {sel_client}</div>
-            <div class="amount">{fmt_money(total_client)}</div>
-            <div class="meta">à prélever · {nb_contrats_client} contrat(s) · agence(s) {agences_client}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    card_col, action_col = st.columns([4, 1.3])
+    with card_col:
+        st.markdown(
+            f"""
+            <div class="summary-card">
+                <div class="name">Client {sel_client}</div>
+                <div class="amount">{fmt_money(total_client)}</div>
+                <div class="meta">à prélever · {nb_contrats_client} contrat(s) · agence(s) {agences_client}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with action_col:
+        st.write("")
+        st.write("")
+        if st.button("✓ Marquer régularisé", key=f"reg_btn_{sel_client}", use_container_width=True):
+            confirm_regularize(sel_client, total_client)
 
-    show_cols = ["ID Contrat", "Numero de compte", "DAO", "Type de revenu",
+    show_cols = ["ID Contrat", "Numero de compte", "Agence", "Type de revenu",
                  "Solde du compte", "Montant non prélevé", "Date d'identification"]
     st.dataframe(cdf[show_cols].sort_values("Montant non prélevé", ascending=False),
                  use_container_width=True, hide_index=True)
@@ -453,10 +589,10 @@ with tab_client:
 # PAR AGENCE
 # ========================================================================================
 with tab_agence:
-    agences = sorted(fdf["DAO"].unique().tolist())
-    sel_agence = st.selectbox("Sélectionner une agence (DAO)", agences, key="agence_select")
+    agences = sorted(fdf["Agence"].unique().tolist())
+    sel_agence = st.selectbox("Sélectionner une agence", agences, key="agence_select")
 
-    adf = fdf[fdf["DAO"] == sel_agence]
+    adf = fdf[fdf["Agence"] == sel_agence]
     total_agence = adf["Montant non prélevé"].sum()
     nb_clients_agence = adf["ID Client"].nunique()
     nb_contrats_agence = adf["ID Contrat"].nunique()
@@ -486,7 +622,7 @@ with tab_agence:
             .sort_values("Montant non prélevé", ascending=False)
         )
         fig2 = px.bar(by_client_agence, x="ID Client", y="Montant non prélevé",
-                      text_auto=".2s", color_discrete_sequence=[EMERALD])
+                      text_auto=".2s", color_discrete_sequence=[BRAND])
         fig2.update_xaxes(type="category", title="")
         fig2.update_yaxes(title="")
         style_fig(fig2, "Montant par client")
@@ -513,7 +649,7 @@ with tab_type:
     tdf = fdf[fdf["Type de revenu"] == sel_type]
     total_type = tdf["Montant non prélevé"].sum()
     nb_clients_type = tdf["ID Client"].nunique()
-    nb_agences_type = tdf["DAO"].nunique()
+    nb_agences_type = tdf["Agence"].nunique()
     accent = color_for_type(sel_type)
 
     st.markdown(
@@ -530,10 +666,10 @@ with tab_type:
     colA, colB = st.columns([1, 1.2])
     with colA:
         by_agence_type = (
-            tdf.groupby("DAO", as_index=False)["Montant non prélevé"].sum()
+            tdf.groupby("Agence", as_index=False)["Montant non prélevé"].sum()
             .sort_values("Montant non prélevé", ascending=False)
         )
-        fig = px.bar(by_agence_type, x="DAO", y="Montant non prélevé", text_auto=".2s",
+        fig = px.bar(by_agence_type, x="Agence", y="Montant non prélevé", text_auto=".2s",
                      color_discrete_sequence=[accent])
         fig.update_xaxes(type="category", title="Agence")
         fig.update_yaxes(title="")
@@ -552,7 +688,7 @@ with tab_type:
         style_fig(fig2, "Top clients")
         st.plotly_chart(fig2, use_container_width=True)
 
-    show_cols_type = ["ID Client", "ID Contrat", "DAO", "Numero de compte",
+    show_cols_type = ["ID Client", "ID Contrat", "Agence", "Numero de compte",
                       "Solde du compte", "Montant non prélevé", "Date d'identification"]
     st.dataframe(tdf[show_cols_type].sort_values("Montant non prélevé", ascending=False),
                  use_container_width=True, hide_index=True)
@@ -574,5 +710,6 @@ with tab_data:
         file_name="donnees_filtrees.csv", mime="text/csv",
     )
     st.caption(
-        "Utilisez les filtres de la barre latérale pour restreindre les données affichées dans tous les onglets."
+        "Utilisez les filtres de la barre latérale pour restreindre les données affichées dans tous les onglets. "
+        "Les clients régularisés sont automatiquement exclus de cette table."
     )
